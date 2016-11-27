@@ -25,7 +25,7 @@
 static key_code	key_string_search_table(const char *);
 static key_code	key_string_get_modifiers(const char **);
 
-const struct {
+static const struct {
 	const char     *string;
 	key_code	key;
 } key_string_table[] = {
@@ -98,6 +98,12 @@ const struct {
 	KEYC_MOUSE_STRING(MOUSEDRAGEND3, MouseDragEnd3),
 	KEYC_MOUSE_STRING(WHEELUP, WheelUp),
 	KEYC_MOUSE_STRING(WHEELDOWN, WheelDown),
+	KEYC_MOUSE_STRING(DOUBLECLICK1, DoubleClick1),
+	KEYC_MOUSE_STRING(DOUBLECLICK2, DoubleClick2),
+	KEYC_MOUSE_STRING(DOUBLECLICK3, DoubleClick3),
+	KEYC_MOUSE_STRING(TRIPLECLICK1, TripleClick1),
+	KEYC_MOUSE_STRING(TRIPLECLICK2, TripleClick2),
+	KEYC_MOUSE_STRING(TRIPLECLICK3, TripleClick3),
 };
 
 /* Find key string in table. */
@@ -134,6 +140,9 @@ key_string_get_modifiers(const char **string)
 		case 's':
 			modifiers |= KEYC_SHIFT;
 			break;
+		default:
+			*string = NULL;
+			return 0;
 		}
 		*string += 2;
 	}
@@ -146,8 +155,7 @@ key_string_lookup_string(const char *string)
 {
 	static const char	*other = "!#()+,-.0123456789:;<=>?'\r\t";
 	key_code		 key;
-	u_short			 u;
-	int			 size;
+	u_int			 u;
 	key_code		 modifiers;
 	struct utf8_data	 ud;
 	u_int			 i;
@@ -160,7 +168,9 @@ key_string_lookup_string(const char *string)
 
 	/* Is this a hexadecimal value? */
 	if (string[0] == '0' && string[1] == 'x') {
-	        if (sscanf(string + 2, "%hx%n", &u, &size) != 1 || size > 4)
+	        if (sscanf(string + 2, "%x", &u) != 1)
+	                return (KEYC_UNKNOWN);
+		if (u > 0x1fffff)
 	                return (KEYC_UNKNOWN);
 	        return (u);
 	}
@@ -172,7 +182,7 @@ key_string_lookup_string(const char *string)
 		string++;
 	}
 	modifiers |= key_string_get_modifiers(&string);
-	if (string[0] == '\0')
+	if (string == NULL || string[0] == '\0')
 		return (KEYC_UNKNOWN);
 
 	/* Is this a standard ASCII key? */
